@@ -1,0 +1,12 @@
+---
+- name: Ensure cloudstack-usage is enabled
+  ansible.builtin.service:
+    name: cloudstack-usage
+    state: started
+    enabled: true
+
+- name: Add usage host to inventory
+  ansible.builtin.add_host:
+    hostname: "{{ inventory_hostname }}"
+    groups:
+      - __cloudstack_usage

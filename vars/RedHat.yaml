@@ -1,0 +1,18 @@
+---
+__cloudstack_package_map:
+  management:
+    - cloudstack-management
+  database:
+    - python-PyMySQL
+    - mysql
+    - mysql-server
+  kvm_hypervisor:
+    - cloudstack-agent
+    - "@Virtualization Host"
+  common:
+    - chrony
+    - python3-firewall
+  usage:
+    - cloudstack-usage
+  secondary_storage:
+    - nfs-utils

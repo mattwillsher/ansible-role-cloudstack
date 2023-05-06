@@ -1,0 +1,93 @@
+---
+- name: Add KVM hypervisor host to inventory
+  ansible.builtin.add_host:
+    hostname: "{{ inventory_hostname }}"
+    groups:
+      - __cloudstack_kvm_hypervisor
+
+- name: Set SELinux to permissive
+  ansible.posix.selinux:
+    state: permissive
+    policy: targeted
+
+- name: Add cloudstack group
+  ansible.builtin.group:
+    name: cloudstack
+    system: true
+
+- name: Add cloudstack management user
+  ansible.builtin.user:
+    name: cloudstack
+    group: cloudstack
+    system: true
+    password: "{{ cloudstack_user_password_hash }}"
+    create_home: true
+
+- name: Grant cloudstack user root access
+  ansible.builtin.copy:
+    src: sudoers
+    dest: /etc/sudoers.d/cloudstack
+    owner: root
+    group: root
+    mode: "0400"
+
+- name: Copy in libvirtd sysconfig
+  ansible.builtin.copy:
+    src: sysconfig_libvirtd
+    dest: /etc/sysconfig/libvirtd
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart libvirtd
+
+- name: Mask unused libvirt services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    masked: true
+  with_items:
+    - libvirtd.socket
+    - libvirtd-ro.socket
+    - libvirtd-admin.socket
+    - libvirtd-tls.socket
+    - libvirtd-tcp.socket
+  notify: Restart libvirtd
+
+- name: Configure libvirtd
+  ansible.builtin.lineinfile:
+    path: /etc/libvirt/libvirtd.conf
+    regexp: "^#?\\s+{{ item | split | first }}"
+    line: "{{ item }}"
+  with_items:
+    - listen_tls = 0
+    - listen_tcp = 0
+    - tls_port = "16514"
+    - tcp_port = "16509"
+    - auth_tcp = "none"
+    - mdns_adv = 0
+  notify: Restart libvirtd
+
+- name: Configure qemu
+  ansible.builtin.lineinfile:
+    path: /etc/libvirt/qemu.conf
+    regexp: "^#?\\s+vnc_listen"
+    line: "vnc_listen = \"0.0.0.0\""
+  notify: Restart libvirtd
+
+- name: Configure agent guest cpu mode
+  ansible.builtin.lineinfile:
+    path: /etc/cloudstack/agent/agent.properties
+    regexp: "^#?\\s+guest.cpu.mode"
+    line: "guest.cpu.mode=host-passthrough"
+
+- name: Ensure libvirt is running
+  ansible.builtin.service:
+    name: libvirtd.service
+    state: started
+    enabled: true
+
+- name: Install cloudstack authorized_keys
+  ansible.posix.authorized_key:
+    user: cloudstack
+    exclusive: true
+    key: "{{ cloudstack_ssh_public_key }}"
+  when: cloudstack_runtime_configuration

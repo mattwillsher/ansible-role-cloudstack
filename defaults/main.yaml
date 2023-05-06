@@ -1,0 +1,34 @@
+---
+cloudstack_enable: true
+cloudstack_version: "4.18.0"
+cloudstack_template_version: "{{ cloudstack_minor_version }}.0"
+
+cloudstack_node_roles:
+  - management
+  - secondary_storage
+  - usage
+  - database
+  - kvm_hypervisor
+
+cloudstack_database_root_user_password: "{{ lookup('ansible.builtin.password', 'credentials/cloudstack_database_root_user_password', length=15) }}"
+cloudstack_database_cloud_user_password: "{{ lookup('ansible.builtin.password', 'credentials/cloudstack_database_cloud_user_password', length=15) }}"
+cloudstack_ssh_public_key: "{{ lookup('ansible.builtin.file', 'credentials/cloudstack_id_rsa.pub') }}"
+cloudstack_user_password: "{{ lookup('ansible.builtin.password', 'credentials/cloudstack_user_password', length=15) }}"
+cloudstack_user_password_hash: "{{ cloudstack_user_password | password_hash }}"
+
+cloudstack_download_url: http://download.cloudstack.org
+cloudstack_rpm_gpg_key_url: "{{ cloudstack_download_url }}/RPM-GPG-KEY"
+
+cloudstack_runtime_configuration: true
+
+cloudstack_encryption_type: file
+cloudstack_management_server_key: password
+cloudstack_management_database_key: password
+cloudstack_management_database_host: "{{ groups['__cloudstack_database'][0] }}"
+cloudstack_management_server_ip: "{{ hostvars[groups['__cloudstack_management'][0]]['ansible_facts']['default_ipv4']['address'] }}"
+cloudstack_secondary_storage_host: "{{ groups['__cloudstack_secondary_storage'][0] }}"
+
+cloudstack_nfs_clients: "*"
+cloudstack_force_systemvm_update: false
+
+cloudstack_management_gateway: "{{ hostvars[groups['__cloudstack_management'][0]]['ansible_facts']['default_ipv4']['address'] }}"

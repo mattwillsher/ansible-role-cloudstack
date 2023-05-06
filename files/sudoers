@@ -1,0 +1,4 @@
+cloudstack ALL=NOPASSWD: /usr/bin/cloudstack-setup-agent
+cloudstack ALL=NOPASSWD: /usr/share/cloudstack-common/scripts/util/keystore-setup
+cloudstack ALL=NOPASSWD: /usr/share/cloudstack-common/scripts/util/keystore-cert-import
+Defaults:cloudstack !requiretty

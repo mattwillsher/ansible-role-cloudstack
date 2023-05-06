@@ -1,0 +1,4 @@
+---
+- name: Invoke the role, if enabled
+  ansible.builtin.include_tasks: cloudstack.yaml
+  when: cloudstack_enable|bool

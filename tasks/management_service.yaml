@@ -1,0 +1,92 @@
+---
+- name: Add management host to inventory
+  ansible.builtin.add_host:
+    hostname: "{{ inventory_hostname }}"
+    groups:
+      - __cloudstack_management
+
+- name: Set SELinux to permissive
+  ansible.posix.selinux:
+    state: permissive
+    policy: targeted
+
+- name: Configure management run-time
+  when: cloudstack_runtime_configuration
+  block:
+    - name: Setup cloud databases
+      ansible.builtin.command: >
+        cloudstack-setup-databases cloud:{{ cloudstack_database_cloud_user_password }}@{{ cloudstack_management_database_host }}
+        --schema-only
+        -e "{{ cloudstack_encryption_type }}"
+        -m "{{ cloudstack_management_server_key }}"
+        -k "{{ cloudstack_management_database_key }}"
+        -i "{{ cloudstack_management_server_ip }}"
+      args:
+        creates: /etc/cloudstack/management/key
+
+    - name: Setup Management
+      ansible.builtin.command: cloudstack-setup-management
+      args:
+        creates: /var/log/cloudstack/management/management-server.log
+
+    # - name: Allow 8080 to admin ui
+    #   ansible.posix.firewalld:
+    #     port: 8080/tcp
+    #     permanent: true
+    #     state: enabled
+
+    - name: Ensure cloudstack-management is enabled
+      ansible.builtin.service:
+        name: cloudstack-management
+        state: started
+        enabled: true
+
+    - name: Create secondary storage mount path
+      ansible.builtin.file:
+        name: /mnt/secondary
+        state: directory
+        owner: root
+        group: root
+        mode: '0777'
+
+    - name: Mount an NFS volume
+      ansible.posix.mount:
+        src: "{{ cloudstack_secondary_storage_host }}:/export/secondary"
+        path: /mnt/secondary
+        state: mounted
+        fstype: nfs
+
+    - name: Get templateId from DB to check for SystemVM
+      community.mysql.mysql_query:
+        login_host: "{{ cloudstack_management_database_host }}"
+        login_db: cloud
+        login_user: cloud
+        login_password: "{{ cloudstack_database_cloud_user_password }}"
+        query: "select max(id) from cloud.vm_template where type = \"SYSTEM\" and hypervisor_type = \"KVM\" and removed is null"
+      register: __cloudstack_template_id
+
+    - name: Force template update
+      ansible.builtin.file:
+        path: /mnt/secondary/template/tmpl/1/{{ __cloudstack_template_id["query_result"][0][0]["max(id)"] }}/template.properties
+        state: absent
+      when: cloudstack_force_systemvm_update
+
+    - name: Install SystemVM template
+      ansible.builtin.command: >
+        /usr/share/cloudstack-common/scripts/storage/secondary/cloud-install-sys-tmplt
+        -m /mnt/secondary
+        -u {{ cloudstack_download_url }}/systemvm/{{ cloudstack_minor_version }}/systemvmtemplate-{{ cloudstack_version }}-kvm.qcow2.bz2
+        -h kvm
+        -s "{{ cloudstack_management_server_key }}"
+        -F
+      args:
+        creates: /mnt/secondary/template/tmpl/1/{{ __cloudstack_template_id["query_result"][0][0]["max(id)"] }}/template.properties
+
+# service needs to have started for the key to be generated, so retry
+    - name: Fetch cloudstack public ssh key
+      ansible.builtin.fetch:
+        src: /var/cloudstack/management/.ssh/id_rsa.pub
+        dest: credentials/cloudstack_id_rsa.pub
+        flat: true
+      retries: 10
+      delay: 10

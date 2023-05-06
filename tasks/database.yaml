@@ -1,0 +1,74 @@
+---
+- name: Configure CloudStack specific MySQL settings
+  ansible.builtin.copy:
+    src: mysql.cnf
+    dest: /etc/my.cnf.d/cloudstack.cnf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart mysqld
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: Ensure the MySQL service is running
+  ansible.builtin.service:
+    name: mysqld
+    state: started
+    enabled: true
+
+- name: Ensure the test database is absent
+  community.mysql.mysql_db:
+    name: test
+    state: absent
+
+- name: Ensure local anonymous users are absent from the database
+  community.mysql.mysql_user:
+    name: ""
+    host: "{{ item }}"
+    state: absent
+  with_items:
+    - 127.0.0.1
+    - localhost
+
+- name: Configure database run-time environment
+  when: cloudstack_runtime_configuration
+  block:
+    - name: Update mysql root user's password
+      community.mysql.mysql_user:
+        name: root
+        password: "{{ cloudstack_database_root_user_password }}"
+        priv: "*.*:ALL,GRANT"
+
+    - name: Store the mysql root user's password in the system root user mysql client configuration
+      ansible.builtin.template:
+        src: my.cnf.j2
+        dest: /root/.my.cnf
+        owner: root
+        group: root
+        mode: "0600"
+
+    - name: Create the cloud and cloud_usage databases
+      community.mysql.mysql_db:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - cloud
+        - cloud_usage
+
+    - name: Create the cloud database user with access to the cloud and cloud_usage databases
+      community.mysql.mysql_user:
+        state: present
+        name: cloud
+        host: "%"
+        password: "{{ cloudstack_database_cloud_user_password }}"
+        priv:
+          "cloud.*": "ALL"
+          "cloud_usage.*": "ALL"
+          "*.*": "process"
+
+- name: Add database host to inventory
+  ansible.builtin.add_host:
+    hostname: "{{ inventory_hostname }}"
+    groups:
+      - __cloudstack_database

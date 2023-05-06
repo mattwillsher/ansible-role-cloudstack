@@ -1,0 +1,18 @@
+---
+- name: CloudStack YUM repository
+  ansible.builtin.yum_repository:
+    name: cloudstack-{{ cloudstack_minor_version }}
+    description: CloudStack Community Repository
+    file: cloudstack
+    baseurl: "{{ cloudstack_download_url }}/el/{{ ansible_facts['distribution_major_version'] }}/{{ cloudstack_minor_version }}"
+    enabled: true
+    gpgcheck: true
+    gpgkey:
+      - "{{ cloudstack_rpm_gpg_key_url }}"
+  when:
+    - ansible_facts['os_family'] == "RedHat"
+
+- name: Install selected packages
+  ansible.builtin.package:
+    name: "{{ cloudstack_packages }}"
+    state: present
