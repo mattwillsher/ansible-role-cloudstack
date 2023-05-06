@@ -34,3 +34,7 @@ dependencies:
     when:
       - ansible_facts['os_family'] == "RedHat"
       - ansible_facts['distribution_major_version']|int >= 9
+  - src: community.mysql
+    version: 3.6.0
+  - src: ansible.posix
+    version: 1.5.2
