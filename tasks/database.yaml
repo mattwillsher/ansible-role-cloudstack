@@ -2,7 +2,7 @@
 - name: Configure CloudStack specific MySQL settings
   ansible.builtin.copy:
     src: mysql.cnf
-    dest: /etc/my.cnf.d/cloudstack.cnf
+    dest: "{{ __cloudstack_mysqld_config_dir }}/cloudstack.cnf"
     owner: root
     group: root
     mode: "0644"
@@ -10,12 +10,6 @@
 
 - name: Flush handlers
   ansible.builtin.meta: flush_handlers
-
-- name: Ensure the MySQL service is running
-  ansible.builtin.service:
-    name: mysqld
-    state: started
-    enabled: true
 
 - name: Ensure the test database is absent
   community.mysql.mysql_db:

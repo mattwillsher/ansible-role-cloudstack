@@ -1,0 +1,61 @@
+---
+- name: Primary storage
+  when: cloudstack_node_roles is ansible.builtin.contains('primary_storage')
+  block:
+    - name: Create primary directory
+      ansible.builtin.file:
+        name: /export/primary
+        state: directory
+        owner: root
+        group: root
+        mode: '0777'
+
+    - name: Export primary
+      ansible.builtin.lineinfile:
+        path: /etc/exports
+        regex: '^\/export\/primary\s'
+        line: /export/primary  {{ cloudstack_nfs_clients }}(rw,async,no_root_squash,no_subtree_check)
+        owner: root
+        group: root
+        mode: '0644'
+      notify:
+        - Restart NFS Server
+
+- name: Secondary storage
+  when: cloudstack_node_roles is ansible.builtin.contains('secondary_storage')
+  block:
+    - name: Create secondary directory
+      ansible.builtin.file:
+        name: /export/secondary
+        state: directory
+        owner: root
+        group: root
+        mode: '0777'
+
+    - name: Export secondary
+      ansible.builtin.lineinfile:
+        path: /etc/exports
+        regex: '^\/export\/secondary\s'
+        line: /export/secondary  {{ cloudstack_nfs_clients }}(rw,async,no_root_squash,no_subtree_check)
+        owner: root
+        group: root
+        mode: '0644'
+      notify:
+        - Restart NFS Server
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: Add primary storage host to inventory
+  ansible.builtin.add_host:
+    hostname: "{{ inventory_hostname }}"
+    groups:
+      - __cloudstack_primary_storage
+  when: cloudstack_node_roles is ansible.builtin.contains('primary_storage')
+
+- name: Add secondary storage host to inventory
+  ansible.builtin.add_host:
+    hostname: "{{ inventory_hostname }}"
+    groups:
+      - __cloudstack_secondary_storage
+  when: cloudstack_node_roles is ansible.builtin.contains('secondary_storage')

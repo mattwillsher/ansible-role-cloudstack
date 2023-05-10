@@ -3,22 +3,23 @@ __cloudstack_package_map:
   management:
     - cloudstack-management
   database:
-    - python-PyMySQL
-    - mysql
+    - python3-mysqldb
+    - mysql-client
     - mysql-server
   kvm_hypervisor:
     - cloudstack-agent
-    - "@Virtualization Host"
+    - qemu-kvm
   common:
     - chrony
     - python3-firewall
-  usage:
-    - cloudstack-usage
+  usage: []
   secondary_storage:
-    - nfs-utils
+    - nfs-kernel-server
+    - quota
   primary_storage:
-    - nfs-utils
+    - nfs-kernel-server
+    - quota
 
-__cloudstack_mysqld_config_dir: /etc/my.cnf.d
+__cloudstack_mysqld_config_dir: /etc/mysql/mysql.conf.d
 __cloudstack_mysqld_service: mysql.service
-__cloudstack_libvirtd_parameters: /etc/sysconfig/libvirtd
+__cloudstack_libvirtd_parameters: /etc/default/libvirtd

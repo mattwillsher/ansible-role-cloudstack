@@ -1,7 +1,7 @@
 ---
 - name: Restart mysqld
   ansible.builtin.service:
-    name: mysqld.service
+    name: "{{ __cloudstack_mysqld_service }}"
     state: restarted
     enabled: true
 
@@ -14,5 +14,23 @@
 - name: Restart libvirtd
   ansible.builtin.service:
     name: libvirtd.service
+    state: restarted
+    enabled: true
+
+- name: Restart Cloudstack Management
+  ansible.builtin.service:
+    name: cloudstack-management
+    state: restarted
+    enabled: true
+
+- name: Restart Cloudstack Usage
+  ansible.builtin.service:
+    name: cloudstack-usage
+    state: restarted
+    enabled: true
+
+- name: Restart Cloudstack Agent
+  ansible.builtin.service:
+    name: cloudstack-agent
     state: restarted
     enabled: true

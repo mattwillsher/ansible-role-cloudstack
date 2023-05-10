@@ -9,6 +9,26 @@
   ansible.posix.selinux:
     state: permissive
     policy: targeted
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: Disable apparmor profiles
+  when: ansible_facts['distribution'] == "Ubuntu"
+  ansible.builtin.command:
+    cmd: "/usr/sbin/apparmor_parser -R /etc/apparmor.d/{{ item }}"
+    creates: "/etc/apparmor.d/disable/{{ item }}"
+  loop:
+    - usr.sbin.libvirtd
+    - usr.lib.libvirt.virt-aa-helper
+
+- name: Persist disablement of apparmor profile
+  when: ansible_facts['distribution'] == "Ubuntu"
+  ansible.builtin.file:
+    src: "/etc/apparmor.d/{{ item }}"
+    dest: "/etc/apparmor.d/disable/{{ item }}"
+    state: link
+  loop:
+    - usr.sbin.libvirtd
+    - usr.lib.libvirt.virt-aa-helper
 
 - name: Add cloudstack group
   ansible.builtin.group:
@@ -31,10 +51,10 @@
     group: root
     mode: "0400"
 
-- name: Copy in libvirtd sysconfig
+- name: Copy in libvirtd daemon parameters file
   ansible.builtin.copy:
     src: sysconfig_libvirtd
-    dest: /etc/sysconfig/libvirtd
+    dest: "{{ __cloudstack_libvirtd_parameters }}"
     owner: root
     group: root
     mode: "0644"
@@ -78,16 +98,15 @@
     path: /etc/cloudstack/agent/agent.properties
     regexp: "^#?\\s+guest.cpu.mode"
     line: "guest.cpu.mode=host-passthrough"
+  notify: Restart Cloudstack Agent
 
-- name: Ensure libvirt is running
-  ansible.builtin.service:
-    name: libvirtd.service
-    state: started
-    enabled: true
+# - name: Install cloudstack authorized_keys
+#   ansible.posix.authorized_key:
+#     user: cloudstack
+#     exclusive: true
+#     key: "{{ cloudstack_ssh_public_key }}"
+#   when: cloudstack_runtime_configuration
 
-- name: Install cloudstack authorized_keys
-  ansible.posix.authorized_key:
-    user: cloudstack
-    exclusive: true
-    key: "{{ cloudstack_ssh_public_key }}"
-  when: cloudstack_runtime_configuration
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
+  

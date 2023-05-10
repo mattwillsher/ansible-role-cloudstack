@@ -24,8 +24,9 @@ cloudstack_runtime_configuration: true
 cloudstack_encryption_type: file
 cloudstack_management_server_key: password
 cloudstack_management_database_key: password
-cloudstack_management_database_host: "{{ groups['__cloudstack_database'][0] }}"
+cloudstack_management_database_host: "{{ hostvars[groups['__cloudstack_database'][0]]['ansible_facts']['default_ipv4']['address'] }}"
 cloudstack_management_server_ip: "{{ hostvars[groups['__cloudstack_management'][0]]['ansible_facts']['default_ipv4']['address'] }}"
+cloudstack_primary_storage_host: "{{ groups['__cloudstack_primary_storage'][0] }}"
 cloudstack_secondary_storage_host: "{{ groups['__cloudstack_secondary_storage'][0] }}"
 
 cloudstack_nfs_clients: "*"

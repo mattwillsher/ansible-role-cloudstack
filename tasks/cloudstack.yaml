@@ -1,8 +1,4 @@
 ---
-- name: Debug
-  ansible.builtin.debug:
-    var: cloudstack_minor_version
-
 - name: Set platform/version specific variables
   ansible.builtin.include_tasks: variables.yaml
 
@@ -13,9 +9,10 @@
   ansible.builtin.include_tasks: database.yaml
   when: cloudstack_node_roles is ansible.builtin.contains('database')
 
-- name: Configure secondary storage
-  ansible.builtin.include_tasks: secondary_storage.yaml
-  when: cloudstack_node_roles is ansible.builtin.contains('secondary_storage')
+- name: Configure storage
+  ansible.builtin.include_tasks: storage.yaml
+  when: cloudstack_node_roles is ansible.builtin.contains('primary_storage') or
+        cloudstack_node_roles is ansible.builtin.contains('secondary_storage')
 
 - name: Configure management
   ansible.builtin.include_tasks: management_service.yaml

@@ -11,6 +11,25 @@
       - "{{ cloudstack_rpm_gpg_key_url }}"
   when:
     - ansible_facts['os_family'] == "RedHat"
+    - cloudstack_packages | select('search', 'cloudstack') | list | length > 0
+
+- name: Cloudstack APT repository
+  when:
+    - ansible_facts['distribution'] == "Ubuntu"
+    - cloudstack_packages | select('search', 'cloudstack') | list | length > 0
+  block:
+    - name: Cloudstack GPG Key
+      ansible.builtin.get_url:
+        url: "{{ cloudstack_download_url }}/release.asc"
+        dest: /etc/apt/trusted.gpg.d/cloudstack.asc
+        owner: root
+        group: root
+        mode: "0644"
+    - name: Cloudstack APT repository
+      ansible.builtin.apt_repository:
+        filename: cloudstack
+        repo: "deb {{ cloudstack_download_url }}/ubuntu {{ ansible_facts['distribution_release'] }} {{ cloudstack_minor_version }}"
+        state: present
 
 - name: Install selected packages
   ansible.builtin.package:

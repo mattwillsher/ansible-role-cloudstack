@@ -1,12 +1,15 @@
 ---
-- name: Ensure cloudstack-usage is enabled
-  ansible.builtin.service:
+- name: Install cloudstack-usage package
+  ansible.builtin.package:
     name: cloudstack-usage
-    state: started
-    enabled: true
+    state: present
+  notify: Restart Cloudstack Usage
 
 - name: Add usage host to inventory
   ansible.builtin.add_host:
     hostname: "{{ inventory_hostname }}"
     groups:
       - __cloudstack_usage
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

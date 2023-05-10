@@ -9,6 +9,7 @@
   ansible.posix.selinux:
     state: permissive
     policy: targeted
+  when: ansible_facts['os_family'] == "RedHat"
 
 - name: Configure management run-time
   when: cloudstack_runtime_configuration
@@ -23,23 +24,19 @@
         -i "{{ cloudstack_management_server_ip }}"
       args:
         creates: /etc/cloudstack/management/key
+      notify: Restart Cloudstack Management
 
     - name: Setup Management
       ansible.builtin.command: cloudstack-setup-management
       args:
         creates: /var/log/cloudstack/management/management-server.log
+      notify: Restart Cloudstack Management
 
     # - name: Allow 8080 to admin ui
     #   ansible.posix.firewalld:
     #     port: 8080/tcp
     #     permanent: true
     #     state: enabled
-
-    - name: Ensure cloudstack-management is enabled
-      ansible.builtin.service:
-        name: cloudstack-management
-        state: started
-        enabled: true
 
     - name: Create secondary storage mount path
       ansible.builtin.file:
@@ -82,11 +79,11 @@
       args:
         creates: /mnt/secondary/template/tmpl/1/{{ __cloudstack_template_id["query_result"][0][0]["max(id)"] }}/template.properties
 
-# service needs to have started for the key to be generated, so retry
-    - name: Fetch cloudstack public ssh key
-      ansible.builtin.fetch:
-        src: /var/cloudstack/management/.ssh/id_rsa.pub
-        dest: credentials/cloudstack_id_rsa.pub
-        flat: true
-      retries: 10
-      delay: 10
+# Sometime fails due to race condition. Key is not present on Ubuntu
+    # - name: Fetch cloudstack public ssh key
+    #   ansible.builtin.fetch:
+    #     src: /var/cloudstack/management/.ssh/id_rsa.pub
+    #     dest: credentials/cloudstack_id_rsa.pub
+    #     flat: true
+    #   retries: 10
+    #   delay: 10
