@@ -8,6 +8,14 @@
     mode: "0644"
   notify: Restart mysqld
 
+- name: Mysql listen on all interface if not on same server as management
+  ansible.builtin.lineinfile:
+    path: "{{ __cloudstack_mysql_server_config }}"
+    regexp: "#?\\s*bind-address\\s+"
+    line: "bind-address=0.0.0.0"
+  notify: Restart mysqld
+  when: not __cloudstack_db_on_management_host
+
 - name: Flush handlers
   ansible.builtin.meta: flush_handlers
 

@@ -1,10 +1,10 @@
 ---
 - name: CloudStack YUM repository
   ansible.builtin.yum_repository:
-    name: cloudstack-{{ cloudstack_minor_version }}
+    name: cloudstack-{{ __cloudstack_minor_version }}
     description: CloudStack Community Repository
     file: cloudstack
-    baseurl: "{{ cloudstack_download_url }}/el/{{ ansible_facts['distribution_major_version'] }}/{{ cloudstack_minor_version }}"
+    baseurl: "{{ cloudstack_download_url }}/el/{{ ansible_facts['distribution_major_version'] }}/{{ __cloudstack_minor_version }}"
     enabled: true
     gpgcheck: true
     gpgkey:
@@ -16,11 +16,11 @@
 - name: Cloudstack APT repository
   when:
     - ansible_facts['distribution'] == "Ubuntu"
-    - cloudstack_packages | select('search', 'cloudstack') | list | length > 0
+    - __cloudstack_packages | select('search', 'cloudstack') | list | length > 0
   block:
     - name: Cloudstack GPG Key
       ansible.builtin.get_url:
-        url: "{{ cloudstack_download_url }}/release.asc"
+        url: "{{ cloudstack_apt_gpg_key_url }}"
         dest: /etc/apt/trusted.gpg.d/cloudstack.asc
         owner: root
         group: root
@@ -28,10 +28,10 @@
     - name: Cloudstack APT repository
       ansible.builtin.apt_repository:
         filename: cloudstack
-        repo: "deb {{ cloudstack_download_url }}/ubuntu {{ ansible_facts['distribution_release'] }} {{ cloudstack_minor_version }}"
+        repo: "deb {{ cloudstack_download_url }}/ubuntu {{ ansible_facts['distribution_release'] }} {{ __cloudstack_minor_version }}"
         state: present
 
 - name: Install selected packages
   ansible.builtin.package:
-    name: "{{ cloudstack_packages }}"
+    name: "{{ __cloudstack_packages }}"
     state: present

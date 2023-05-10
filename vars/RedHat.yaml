@@ -22,3 +22,4 @@ __cloudstack_package_map:
 __cloudstack_mysqld_config_dir: /etc/my.cnf.d
 __cloudstack_mysqld_service: mysql.service
 __cloudstack_libvirtd_parameters: /etc/sysconfig/libvirtd
+__cloudstack_management_ssh_key_path: /var/cloudstack/management/.ssh/id_rsa.pub

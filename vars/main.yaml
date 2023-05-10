@@ -6,6 +6,8 @@ __sshd_required_facts:
 
 __cloudstack_node_roles: "{{ cloudstack_node_roles + ['common'] }}"
 
-cloudstack_minor_version: "{{ cloudstack_version | regex_replace('^(\\d+\\.\\d+)\\.\\d+', '\\1') }}"
+__cloudstack_minor_version: "{{ cloudstack_version | regex_replace('^(\\d+\\.\\d+)\\.\\d+', '\\1') }}"
 
-cloudstack_packages: "{{ __cloudstack_node_roles | map('extract', __cloudstack_package_map) | list | flatten }}"
+__cloudstack_packages: "{{ __cloudstack_node_roles | map('extract', __cloudstack_package_map) | list | flatten }}"
+
+__cloudstack_db_on_management_host: "{{ cloudstack_node_roles | intersect(['database','management']) | length == 2 }}"

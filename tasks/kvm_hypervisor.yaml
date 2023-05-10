@@ -40,7 +40,7 @@
     name: cloudstack
     group: cloudstack
     system: true
-    password: "{{ cloudstack_user_password_hash }}"
+    password: "{{ cloudstack_user_password | password_hash }}"
     create_home: true
 
 - name: Grant cloudstack user root access
@@ -100,13 +100,12 @@
     line: "guest.cpu.mode=host-passthrough"
   notify: Restart Cloudstack Agent
 
-# - name: Install cloudstack authorized_keys
-#   ansible.posix.authorized_key:
-#     user: cloudstack
-#     exclusive: true
-#     key: "{{ cloudstack_ssh_public_key }}"
-#   when: cloudstack_runtime_configuration
+- name: Install cloudstack authorized_keys
+  ansible.posix.authorized_key:
+    user: cloudstack
+    exclusive: true
+    key: "{{ lookup('ansible.builtin.file', 'credentials/cloudstack_id_rsa.pub') }}"
+  when: cloudstack_runtime_configuration
 
 - name: Flush handlers
   ansible.builtin.meta: flush_handlers
-  

@@ -72,18 +72,23 @@
       ansible.builtin.command: >
         /usr/share/cloudstack-common/scripts/storage/secondary/cloud-install-sys-tmplt
         -m /mnt/secondary
-        -u {{ cloudstack_download_url }}/systemvm/{{ cloudstack_minor_version }}/systemvmtemplate-{{ cloudstack_version }}-kvm.qcow2.bz2
+        -u {{ cloudstack_download_url }}/systemvm/{{ __cloudstack_minor_version }}/systemvmtemplate-{{ cloudstack_version }}-kvm.qcow2.bz2
         -h kvm
         -s "{{ cloudstack_management_server_key }}"
         -F
       args:
         creates: /mnt/secondary/template/tmpl/1/{{ __cloudstack_template_id["query_result"][0][0]["max(id)"] }}/template.properties
 
-# Sometime fails due to race condition. Key is not present on Ubuntu
-    # - name: Fetch cloudstack public ssh key
-    #   ansible.builtin.fetch:
-    #     src: /var/cloudstack/management/.ssh/id_rsa.pub
-    #     dest: credentials/cloudstack_id_rsa.pub
-    #     flat: true
-    #   retries: 10
-    #   delay: 10
+    - name: Flush handlers
+      ansible.builtin.meta: flush_handlers
+
+    - name: Wait for management public ssh key
+      ansible.builtin.wait_for:
+        path: "{{ __cloudstack_management_ssh_key_path }}"
+        timeout: 300
+
+    - name: Fetch management public ssh key
+      ansible.builtin.fetch:
+        src: "{{ __cloudstack_management_ssh_key_path }}"
+        dest: credentials/cloudstack_id_rsa.pub
+        flat: true
